@@ -128,17 +128,6 @@ button.secondary {
   color: #64748b;
   margin-top: 12px;
 }
-
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.actions button {
-  font-size: 14px;
-  padding: 12px 6px;
-}
 </style>
 </head>
 
@@ -172,10 +161,7 @@ button.secondary {
       หรือชื่อครอบครัว
     </p>
 
-    <label for="familyName">
-      ชื่อกลุ่ม
-    </label>
-
+    <label for="familyName">ชื่อกลุ่ม</label>
     <input
       id="familyName"
       maxlength="60"
@@ -192,15 +178,7 @@ button.secondary {
   <div class="card">
     <h3>🔗 เข้าร่วมครอบครัว</h3>
 
-    <p class="note">
-      หากมีลิงก์จากสมาชิกครอบครัว
-      ให้เปิดลิงก์นั้นโดยตรง
-    </p>
-
-    <label for="joinLink">
-      ลิงก์ครอบครัว
-    </label>
-
+    <label for="joinLink">ลิงก์ครอบครัว</label>
     <input
       id="joinLink"
       placeholder="วางลิงก์ที่ได้รับ"
@@ -234,7 +212,6 @@ button.secondary {
 
     <p class="note">
       ส่งลิงก์นี้ให้คนในครอบครัว
-      เพื่อเปิดกลุ่มเดียวกัน
     </p>
 
     <button id="shareBtn" type="button">
@@ -251,7 +228,7 @@ button.secondary {
     </button>
   </div>
 
-  <!-- ORIGINAL MILK DASHBOARD -->
+  <!-- MILK DASHBOARD -->
   <section class="grid">
 
     <div class="card">
@@ -275,10 +252,7 @@ button.secondary {
   <section class="card">
     <h3>🍼 บันทึกนม</h3>
 
-    <label for="milkOz">
-      ปริมาณนม (oz)
-    </label>
-
+    <label for="milkOz">ปริมาณนม (oz)</label>
     <input
       id="milkOz"
       type="number"
@@ -288,10 +262,7 @@ button.secondary {
       value="3"
     >
 
-    <label for="milkType">
-      ประเภทนม
-    </label>
-
+    <label for="milkType">ประเภทนม</label>
     <select id="milkType">
       <option value="นมผสม">นมผสม</option>
       <option value="นมแม่ปั๊ม">นมแม่ปั๊ม</option>
@@ -304,16 +275,18 @@ button.secondary {
     <select id="interval">
       <option value="2">2 ชั่วโมง</option>
       <option value="2.5">2.5 ชั่วโมง</option>
-      <option value="3" selected>
-        3 ชั่วโมง
-      </option>
+      <option value="3" selected>3 ชั่วโมง</option>
       <option value="3.5">3.5 ชั่วโมง</option>
       <option value="4">4 ชั่วโมง</option>
     </select>
 
-    <button id="saveBtn" type="button">
+    <button id="saveBtn" type="button" disabled>
       + บันทึกกินนมตอนนี้
     </button>
+
+    <p id="syncStatus" class="status">
+      กำลังเชื่อมข้อมูล...
+    </p>
   </section>
 
   <section class="card">
@@ -323,8 +296,8 @@ button.secondary {
   </section>
 
   <p class="note">
-    ข้อมูลนมในเวอร์ชันนี้ยังเก็บเฉพาะ
-    เบราว์เซอร์เครื่องนั้น ไม่ซิงก์ระหว่างมือถือ
+    ข้อมูลนมจะซิงก์ผ่าน Firestore
+    ระหว่างเครื่องที่เปิด Family Link เดียวกัน
     เวลาตรวจความหิวเป็นเพียงการเตือน
     ไม่ใช่กำหนดเวลาให้นมตายตัว
   </p>
@@ -347,6 +320,13 @@ import {
   doc,
   getDoc,
   setDoc,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  Timestamp,
   serverTimestamp
 }
 from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
@@ -382,11 +362,11 @@ const auth = getAuth(app);
 const $ = id => document.getElementById(id);
 
 const FAMILY_KEY = "baby-care-family-v1";
-const OLD_MILK_KEY = "baby-care-milk-v1";
 
 let currentFamilyId = "";
-let currentFamilyName = "";
 let logs = [];
+let unsubscribeMilk = null;
+let listenerVersion = 0;
 
 function showPage(page) {
   ["loadingPage", "setupPage", "familyPage"]
@@ -421,10 +401,6 @@ function validFamilyId(id) {
   return /^[a-f0-9]{64}$/.test(id);
 }
 
-// ====================================
-// 4. CREATE RANDOM FAMILY ID
-// ====================================
-
 function createFamilyId() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -434,8 +410,20 @@ function createFamilyId() {
   ).join("");
 }
 
+function stopMilkListener() {
+  listenerVersion++;
+
+  if (unsubscribeMilk) {
+    unsubscribeMilk();
+    unsubscribeMilk = null;
+  }
+
+  logs = [];
+  $("saveBtn").disabled = true;
+}
+
 // ====================================
-// 5. CREATE FAMILY
+// 4. CREATE FAMILY
 // ====================================
 
 async function createFamily() {
@@ -461,7 +449,6 @@ async function createFamily() {
     );
 
     localStorage.setItem(FAMILY_KEY, id);
-
     location.hash = "family=" + id;
 
     await openFamily(id);
@@ -470,7 +457,7 @@ async function createFamily() {
     console.error(error);
     setStatus(
       "สร้างครอบครัวไม่สำเร็จ: " +
-      error.code
+      (error.code || error.message)
     );
   } finally {
     $("createBtn").disabled = false;
@@ -478,10 +465,11 @@ async function createFamily() {
 }
 
 // ====================================
-// 6. OPEN FAMILY
+// 5. OPEN FAMILY
 // ====================================
 
 async function openFamily(id) {
+  stopMilkListener();
   showPage("loadingPage");
 
   if (!validFamilyId(id)) {
@@ -502,134 +490,164 @@ async function openFamily(id) {
     }
 
     currentFamilyId = id;
-    currentFamilyName = snapshot.data().name;
 
     $("displayFamily").textContent =
-      currentFamilyName;
+      snapshot.data().name;
 
     localStorage.setItem(FAMILY_KEY, id);
 
-    loadMilkLogs();
+    logs = [];
     renderMilk();
 
     showPage("familyPage");
+    startMilkListener(id);
 
   } catch (error) {
     console.error(error);
-
     showPage("setupPage");
+
     setStatus(
       "เปิดครอบครัวไม่สำเร็จ: " +
-      error.code
+      (error.code || error.message)
     );
   }
 }
 
 // ====================================
-// 7. SHARE / JOIN / LEAVE
+// 6. REAL-TIME MILK LISTENER
 // ====================================
 
-$("createBtn").addEventListener(
-  "click",
-  createFamily
-);
+function startMilkListener(familyId) {
+  const version = listenerVersion;
 
-$("shareBtn").addEventListener(
-  "click",
-  async () => {
-    const url = familyUrl(currentFamilyId);
+  $("syncStatus").textContent =
+    "กำลังซิงก์ข้อมูลจาก Firebase...";
 
-    try {
-      await navigator.clipboard.writeText(url);
-      alert("คัดลอกลิงก์แล้ว");
-    } catch {
-      prompt("คัดลอกลิงก์นี้", url);
+  const milkQuery = query(
+    collection(
+      db,
+      "families",
+      familyId,
+      "milkLogs"
+    ),
+    orderBy("time", "desc"),
+    limit(200)
+  );
+
+  unsubscribeMilk = onSnapshot(
+    milkQuery,
+
+    snapshot => {
+      if (
+        version !== listenerVersion ||
+        familyId !== currentFamilyId
+      ) return;
+
+      logs = snapshot.docs.map(item => {
+        const data = item.data();
+
+        return {
+          id: item.id,
+          time: data.time.toMillis(),
+          oz: data.oz,
+          type: data.type
+        };
+      });
+
+      renderMilk();
+
+      $("saveBtn").disabled = false;
+
+      $("syncStatus").textContent =
+        snapshot.metadata.fromCache
+          ? "กำลังแสดงข้อมูลแคช รอเชื่อมต่อ Cloud"
+          : "● เชื่อมต่อ Firebase แล้ว";
+    },
+
+    error => {
+      if (version !== listenerVersion) return;
+
+      console.error(error);
+
+      $("saveBtn").disabled = true;
+
+      $("syncStatus").textContent =
+        "ซิงก์ไม่สำเร็จ: " +
+        (error.code || error.message);
     }
-  }
-);
+  );
+}
 
-$("joinBtn").addEventListener(
+// ====================================
+// 7. SAVE MILK TO FIRESTORE
+// ====================================
+
+$("saveBtn").addEventListener(
   "click",
   async () => {
-    const value = $("joinLink").value.trim();
+    const oz = Number($("milkOz").value);
+    const type = $("milkType").value;
 
-    let id = "";
+    if (
+      !Number.isFinite(oz) ||
+      oz < 0.5 ||
+      oz > 12
+    ) {
+      alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
+      return;
+    }
+
+    if (!currentFamilyId || !auth.currentUser) {
+      alert("ยังไม่ได้เชื่อมต่อครอบครัว");
+      return;
+    }
+
+    const familyId = currentFamilyId;
+
+    $("saveBtn").disabled = true;
+    $("syncStatus").textContent =
+      "กำลังบันทึกข้อมูล...";
 
     try {
-      const url = new URL(value);
-      const params = new URLSearchParams(
-        url.hash.slice(1)
+      await addDoc(
+        collection(
+          db,
+          "families",
+          familyId,
+          "milkLogs"
+        ),
+        {
+          time: Timestamp.now(),
+          oz,
+          type,
+          createdBy: auth.currentUser.uid
+        }
       );
 
-      id = params.get("family") || "";
-
-      if (
-        url.origin !== location.origin ||
-        url.pathname !== location.pathname
-      ) {
-        setStatus("กรุณาใช้ลิงก์ Baby Care นี้");
-        return;
+      if (familyId === currentFamilyId) {
+        $("syncStatus").textContent =
+          "บันทึกข้อมูลสำเร็จ";
       }
-    } catch {
-      setStatus("กรุณาวางลิงก์ให้ถูกต้อง");
-      return;
+
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        "บันทึกไม่สำเร็จ: " +
+        (error.code || error.message)
+      );
+
+    } finally {
+      if (familyId === currentFamilyId) {
+        $("saveBtn").disabled = false;
+      }
     }
-
-    if (!validFamilyId(id)) {
-      setStatus("รหัสครอบครัวไม่ถูกต้อง");
-      return;
-    }
-
-    location.hash = "family=" + id;
-    await openFamily(id);
-  }
-);
-
-$("leaveBtn").addEventListener(
-  "click",
-  () => {
-    const confirmed = confirm(
-      "กลับไปหน้าสร้างครอบครัว?\n" +
-      "ครอบครัวเดิมยังอยู่ใน Firebase " +
-      "กรุณาเก็บลิงก์ไว้ก่อนออก"
-    );
-
-    if (!confirmed) return;
-
-    localStorage.removeItem(FAMILY_KEY);
-
-    currentFamilyId = "";
-    currentFamilyName = "";
-
-    history.replaceState(
-      null,
-      "",
-      location.pathname + location.search
-    );
-
-    setStatus("");
-    showPage("setupPage");
   }
 );
 
 // ====================================
-// 8. MILK LOCAL STORAGE
+// 8. MILK DASHBOARD RENDER
 // ====================================
-
-// ข้อมูลเดิมยังใช้ Key เดิม
-// และยังไม่ส่งข้อมูลนมขึ้น Firestore
-
-function loadMilkLogs() {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem(OLD_MILK_KEY)
-    );
-
-    logs = Array.isArray(saved) ? saved : [];
-  } catch {
-    logs = [];
-  }
-}
 
 const formatTime = time =>
   new Date(time).toLocaleTimeString(
@@ -675,6 +693,7 @@ function renderMilk() {
     const row = document.createElement("div");
 
     row.className = "log";
+
     row.textContent =
       `${formatTime(item.time)} · ` +
       `${item.oz} oz · ${item.type}`;
@@ -698,54 +717,100 @@ function renderMilk() {
     `รวม ${total.toFixed(1)} oz`;
 }
 
-$("saveBtn").addEventListener(
-  "click",
-  () => {
-    const oz = Number($("milkOz").value);
-    const type = $("milkType").value;
-
-    if (
-      !Number.isFinite(oz) ||
-      oz < 0.5 ||
-      oz > 12
-    ) {
-      alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
-      return;
-    }
-
-    const updated = [
-      {
-        time: Date.now(),
-        oz,
-        type
-      },
-      ...logs
-    ];
-
-    try {
-      localStorage.setItem(
-        OLD_MILK_KEY,
-        JSON.stringify(updated)
-      );
-
-      logs = updated;
-      renderMilk();
-
-      alert("บันทึกเรียบร้อย");
-
-    } catch {
-      alert("บันทึกข้อมูลไม่สำเร็จ");
-    }
-  }
-);
-
 $("interval").addEventListener(
   "change",
   renderMilk
 );
 
 // ====================================
-// 9. START APP
+// 9. SHARE / JOIN / LEAVE
+// ====================================
+
+$("createBtn").addEventListener(
+  "click",
+  createFamily
+);
+
+$("shareBtn").addEventListener(
+  "click",
+  async () => {
+    const url = familyUrl(currentFamilyId);
+
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("คัดลอกลิงก์แล้ว");
+    } catch {
+      prompt("คัดลอกลิงก์นี้", url);
+    }
+  }
+);
+
+$("joinBtn").addEventListener(
+  "click",
+  async () => {
+    const value = $("joinLink").value.trim();
+    let id = "";
+
+    try {
+      const url = new URL(value);
+
+      const params = new URLSearchParams(
+        url.hash.slice(1)
+      );
+
+      id = params.get("family") || "";
+
+      if (
+        url.origin !== location.origin ||
+        url.pathname !== location.pathname
+      ) {
+        setStatus("กรุณาใช้ลิงก์ Baby Care นี้");
+        return;
+      }
+    } catch {
+      setStatus("กรุณาวางลิงก์ให้ถูกต้อง");
+      return;
+    }
+
+    if (!validFamilyId(id)) {
+      setStatus("รหัสครอบครัวไม่ถูกต้อง");
+      return;
+    }
+
+    location.hash = "family=" + id;
+    await openFamily(id);
+  }
+);
+
+$("leaveBtn").addEventListener(
+  "click",
+  () => {
+    const confirmed = confirm(
+      "กลับไปหน้าสร้างครอบครัว?\n" +
+      "กรุณาเก็บลิงก์ครอบครัวเดิมไว้"
+    );
+
+    if (!confirmed) return;
+
+    stopMilkListener();
+
+    localStorage.removeItem(FAMILY_KEY);
+
+    currentFamilyId = "";
+
+    history.replaceState(
+      null,
+      "",
+      location.pathname + location.search
+    );
+
+    setStatus("");
+    showPage("setupPage");
+  }
+);
+
+// ====================================
+// 10. START APP
 // ====================================
 
 async function startApp() {
@@ -777,7 +842,7 @@ async function startApp() {
 
     $("loadingText").textContent =
       "Firebase Login ไม่สำเร็จ: " +
-      error.code;
+      (error.code || error.message);
   }
 }
 
