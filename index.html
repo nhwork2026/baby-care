@@ -5,21 +5,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Baby Care Dashboard</title>
+
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   background: #f4f7fb;
   color: #243047;
   font-family: system-ui, sans-serif;
 }
-.app { max-width: 480px; margin: auto; padding: 20px; }
-header { margin: 12px 0 24px; }
-header small { color: #64748b; }
-h1 { margin: 6px 0; font-size: 28px; }
-h2 { margin: 8px 0; font-size: 27px; }
-h3 { margin-top: 0; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.app {
+  max-width: 480px;
+  margin: auto;
+  padding: 20px;
+}
+
+header {
+  margin: 12px 0 20px;
+}
+
+header small,
+.muted {
+  color: #64748b;
+}
+
+h1 {
+  font-size: 27px;
+  margin: 6px 0;
+}
+
+h2 {
+  margin: 8px 0;
+  font-size: 27px;
+}
+
+h3 {
+  margin: 0 0 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .card {
   background: white;
   padding: 18px;
@@ -27,103 +60,403 @@ h3 { margin-top: 0; }
   margin-bottom: 14px;
   box-shadow: 0 3px 15px #172a4410;
 }
-.card small { color: #64748b; }
-.card p { color: #64748b; font-size: 13px; }
-input, select {
+
+.card small,
+.card p {
+  color: #64748b;
+}
+
+.card p {
+  font-size: 13px;
+}
+
+.field {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+input,
+select {
   width: 100%;
-  padding: 14px;
-  margin: 10px 0 16px;
-  font-size: 18px;
+  padding: 13px;
+  margin: 8px 0 12px;
+  font-size: 16px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: white;
 }
+
 button {
   width: 100%;
-  padding: 16px;
+  padding: 14px;
   background: #2563eb;
-  border: none;
+  border: 0;
   border-radius: 12px;
   color: white;
   font-size: 16px;
   font-weight: 700;
+  cursor: pointer;
 }
+
+button.secondary {
+  background: #e8eefc;
+  color: #2454a3;
+}
+
 .log {
   padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;
 }
-.note { font-size: 12px; color: #64748b; }
+
+.note {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  height: 76px;
+  width: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e8eefc;
+  border: 2px solid #d7e2fa;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-info h2 {
+  font-size: 21px;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+.profile-info p {
+  margin: 4px 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.tabs button {
+  font-size: 14px;
+  padding: 11px;
+}
+
+.tabs button[aria-selected="false"] {
+  background: #e6ebf3;
+  color: #334155;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.photo-preview {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e8eefc;
+  display: block;
+  margin: 8px auto 12px;
+}
+
+.status {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 8px;
+}
 </style>
 </head>
+
 <body>
 <main class="app">
+
   <header>
     <small>👶 BABY CARE</small>
     <h1>Milk Dashboard</h1>
-    <p class="note">บันทึกการกินนมลูก</p>
+    <p class="note">
+      บันทึกการกินนมลูก · เวอร์ชันทดลอง
+    </p>
   </header>
 
-  <section class="grid">
-    <div class="card">
-      <small>กินนมล่าสุด</small>
-      <h2 id="lastTime">--:--</h2>
-      <p id="lastOz">ยังไม่มีข้อมูล</p>
-    </div>
-    <div class="card">
-      <small>ตรวจความหิวถัดไป</small>
-      <h2 id="nextTime">--:--</h2>
-      <p id="nextLabel">ตั้งไว้ 3 ชั่วโมง</p>
+  <!-- FAMILY PROFILE HEADER -->
+  <section class="card profile">
+    <img
+      id="profileAvatar"
+      class="avatar"
+      alt="รูปโปรไฟล์ลูก"
+    >
+
+    <div class="profile-info">
+      <small>โปรไฟล์ครอบครัว</small>
+      <h2 id="displayFamily">
+        ครอบครัวของเรา
+      </h2>
+      <p id="displayBaby">
+        ยังไม่ได้ตั้งชื่อลูก
+      </p>
     </div>
   </section>
 
-  <section class="card">
-    <h3>🍼 บันทึกนม</h3>
-    <label for="milkOz">ปริมาณนม (oz)</label>
-    <input id="milkOz" type="number"
-           min="0.5" max="12" step="0.5" value="3">
+  <!-- NAVIGATION -->
+  <nav class="tabs" aria-label="หน้าจอ">
+    <button
+      id="dashboardTab"
+      aria-selected="true"
+      type="button">
+      🍼 Dashboard
+    </button>
 
-    <label for="milkType">ประเภทนม</label>
-    <select id="milkType">
-      <option value="นมผสม">นมผสม</option>
-      <option value="นมแม่ปั๊ม">นมแม่ปั๊ม</option>
-    </select>
+    <button
+      id="profileTab"
+      aria-selected="false"
+      type="button">
+      ⚙️ โปรไฟล์
+    </button>
+  </nav>
 
-    <label for="interval">ช่วงเวลาเตือน</label>
-    <select id="interval">
-      <option value="2">2 ชั่วโมง</option>
-      <option value="2.5">2.5 ชั่วโมง</option>
-      <option value="3" selected>3 ชั่วโมง</option>
-      <option value="3.5">3.5 ชั่วโมง</option>
-      <option value="4">4 ชั่วโมง</option>
-    </select>
+  <!-- DASHBOARD PAGE -->
+  <div id="dashboardPage">
 
-    <button id="saveBtn">+ บันทึกกินนมตอนนี้</button>
-  </section>
+    <section class="grid">
+      <div class="card">
+        <small>กินนมล่าสุด</small>
+        <h2 id="lastTime">--:--</h2>
+        <p id="lastOz">ยังไม่มีข้อมูล</p>
+      </div>
 
-  <section class="card">
-    <h3>📋 ประวัติการกินนม</h3>
-    <div id="history">ยังไม่มีข้อมูล</div>
-    <p id="total"></p>
+      <div class="card">
+        <small>ตรวจความหิวถัดไป</small>
+        <h2 id="nextTime">--:--</h2>
+        <p id="nextLabel">
+          ตั้งไว้ 3 ชั่วโมง
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>🍼 บันทึกนม</h3>
+
+      <label class="field" for="milkOz">
+        ปริมาณนม (oz)
+      </label>
+      <input
+        id="milkOz"
+        type="number"
+        min="0.5"
+        max="12"
+        step="0.5"
+        value="3"
+      >
+
+      <label class="field" for="milkType">
+        ประเภทนม
+      </label>
+      <select id="milkType">
+        <option value="นมผสม">
+          นมผสม
+        </option>
+        <option value="นมแม่ปั๊ม">
+          นมแม่ปั๊ม
+        </option>
+      </select>
+
+      <label class="field" for="interval">
+        ช่วงเวลาตรวจความหิว
+      </label>
+      <select id="interval">
+        <option value="2">2 ชั่วโมง</option>
+        <option value="2.5">2.5 ชั่วโมง</option>
+        <option value="3" selected>3 ชั่วโมง</option>
+        <option value="3.5">3.5 ชั่วโมง</option>
+        <option value="4">4 ชั่วโมง</option>
+      </select>
+
+      <button id="saveBtn" type="button">
+        + บันทึกกินนมตอนนี้
+      </button>
+    </section>
+
+    <section class="card">
+      <h3>📋 ประวัติการกินนม</h3>
+      <div id="history">
+        ยังไม่มีข้อมูล
+      </div>
+      <p id="total"></p>
+    </section>
+
+    <p class="note">
+      เวลาเตือนเป็นเพียงการเตือนให้ตรวจความหิว
+      หากลูกหิวก่อนเวลา สามารถให้นมตามความต้องการ
+      และคำแนะนำแพทย์ได้
+    </p>
+
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <section id="profilePage" class="card hidden">
+
+    <h3>👶 ตั้งค่าโปรไฟล์</h3>
+
+    <label class="field" for="familyName">
+      ชื่อครอบครัว / ชื่อกลุ่ม
+    </label>
+    <input
+      id="familyName"
+      maxlength="60"
+      placeholder="เช่น บ้านน้องเอ"
+    >
+
+    <label class="field" for="babyName">
+      ชื่อลูก
+    </label>
+    <input
+      id="babyName"
+      maxlength="60"
+      placeholder="เช่น น้องเอ"
+    >
+
+    <label class="field" for="babyPhoto">
+      รูปโปรไฟล์ลูก
+    </label>
+    <input
+      id="babyPhoto"
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+    >
+
+    <p class="note">
+      รองรับ JPG, PNG, WebP ไม่เกิน 2 MB
+      และขึ้นอยู่กับพื้นที่จัดเก็บของเบราว์เซอร์
+    </p>
+
+    <img
+      id="photoPreview"
+      class="photo-preview"
+      alt="ตัวอย่างรูปโปรไฟล์"
+    >
+
+    <button id="saveProfile" type="button">
+      บันทึกโปรไฟล์
+    </button>
+
+    <p
+      id="profileStatus"
+      class="status"
+      role="status">
+    </p>
+
+    <p class="note">
+      ชื่อและรูปเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น
+      ยังไม่แชร์ไปมือถืออื่น
+    </p>
+
   </section>
 
   <p class="note">
-    เวลาที่แสดงเป็นเพียงการเตือนให้ตรวจความหิว
-    หากลูกหิวก่อนเวลา สามารถให้นมได้ตามความต้องการ
+    Dashboard ใช้ localStorage
+    ส่วน Firebase ใช้ Anonymous Authentication
+    ยังไม่ซิงก์ข้อมูลครอบครัว
   </p>
+
 </main>
 
 <script>
+// ====================================
+// 1. LOCAL STORAGE
+// ====================================
+
 const KEY = "baby-care-milk-v1";
+const PROFILE_KEY = "baby-care-profile-v1";
+
+const $ = id => document.getElementById(id);
+
+const fallbackAvatar =
+  "data:image/svg+xml;charset=utf-8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" ' +
+    'viewBox="0 0 100 100">' +
+    '<rect width="100" height="100" fill="#e8eefc"/>' +
+    '<text x="50" y="66" text-anchor="middle" ' +
+    'font-size="52">👶</text></svg>'
+  );
+
 let logs = [];
 
+let profile = {
+  familyName: "",
+  babyName: "",
+  photo: ""
+};
+
+let pendingPhoto = null;
+
 try {
-  const saved = JSON.parse(localStorage.getItem(KEY));
+  const saved = JSON.parse(
+    localStorage.getItem(KEY)
+  );
+
   logs = Array.isArray(saved) ? saved : [];
 } catch {
   logs = [];
 }
 
-const $ = id => document.getElementById(id);
+try {
+  const saved = JSON.parse(
+    localStorage.getItem(PROFILE_KEY)
+  );
+
+  if (saved && typeof saved === "object") {
+    profile = {
+      familyName: String(saved.familyName || ""),
+      babyName: String(saved.babyName || ""),
+      photo: String(saved.photo || "")
+    };
+  }
+} catch {
+  // ใช้ค่าเริ่มต้น
+}
+
+// ====================================
+// 2. PROFILE DISPLAY
+// ====================================
+
+function renderProfile() {
+  $("displayFamily").textContent =
+    profile.familyName || "ครอบครัวของเรา";
+
+  $("displayBaby").textContent =
+    profile.babyName || "ยังไม่ได้ตั้งชื่อลูก";
+
+  $("profileAvatar").src =
+    profile.photo || fallbackAvatar;
+
+  $("photoPreview").src =
+    profile.photo || fallbackAvatar;
+
+  $("familyName").value = profile.familyName;
+  $("babyName").value = profile.babyName;
+}
+
+// ====================================
+// 3. MILK DASHBOARD
+// ====================================
 
 const formatTime = time =>
   new Date(time).toLocaleTimeString("th-TH", {
@@ -133,6 +466,7 @@ const formatTime = time =>
 
 function render() {
   logs.sort((a, b) => b.time - a.time);
+
   const last = logs[0];
   const hours = Number($("interval").value);
 
@@ -140,12 +474,17 @@ function render() {
     last ? formatTime(last.time) : "--:--";
 
   $("lastOz").textContent =
-    last ? `${last.oz} oz · ${last.type}` : "ยังไม่มีข้อมูล";
+    last
+      ? `${last.oz} oz · ${last.type}`
+      : "ยังไม่มีข้อมูล";
 
   $("nextTime").textContent =
-    last ? formatTime(last.time + hours * 3600000) : "--:--";
+    last
+      ? formatTime(last.time + hours * 3600000)
+      : "--:--";
 
-  $("nextLabel").textContent = `ตั้งไว้ ${hours} ชั่วโมง`;
+  $("nextLabel").textContent =
+    `ตั้งไว้ ${hours} ชั่วโมง`;
 
   const history = $("history");
   history.replaceChildren();
@@ -156,87 +495,248 @@ function render() {
 
   logs.slice(0, 20).forEach(item => {
     const row = document.createElement("div");
+
     row.className = "log";
     row.textContent =
-      `${formatTime(item.time)} · ${item.oz} oz · ${item.type}`;
+      `${formatTime(item.time)} · ` +
+      `${item.oz} oz · ${item.type}`;
+
     history.appendChild(row);
   });
 
   const today = new Date().toDateString();
+
   const todayLogs = logs.filter(item =>
     new Date(item.time).toDateString() === today
   );
 
   const total = todayLogs.reduce(
-    (sum, item) => sum + Number(item.oz), 0
+    (sum, item) => sum + Number(item.oz),
+    0
   );
 
   $("total").textContent =
-    `วันนี้ ${todayLogs.length} มื้อ · รวม ${total.toFixed(1)} oz`;
+    `วันนี้ ${todayLogs.length} มื้อ · ` +
+    `รวม ${total.toFixed(1)} oz`;
 }
+
+// ====================================
+// 4. SAVE MILK
+// ====================================
 
 $("saveBtn").addEventListener("click", () => {
   const oz = Number($("milkOz").value);
   const type = $("milkType").value;
 
-  if (!Number.isFinite(oz) || oz < 0.5 || oz > 12) {
+  if (
+    !Number.isFinite(oz) ||
+    oz < 0.5 ||
+    oz > 12
+  ) {
     alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
     return;
   }
 
-  logs.push({
-    time: Date.now(),
-    oz,
-    type
-  });
+  const updated = [
+    {
+      time: Date.now(),
+      oz,
+      type
+    },
+    ...logs
+  ];
 
   try {
-    localStorage.setItem(KEY, JSON.stringify(logs));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify(updated)
+    );
+
+    logs = updated;
     render();
+
     alert("บันทึกเรียบร้อย");
   } catch {
-    alert("ไม่สามารถบันทึกข้อมูลลงเครื่องได้");
+    alert("บันทึกข้อมูลไม่ได้ กรุณาตรวจสอบพื้นที่จัดเก็บ");
   }
 });
 
 $("interval").addEventListener("change", render);
 
+// ====================================
+// 5. PAGE NAVIGATION
+// ====================================
+
+function showPage(page) {
+  const dashboard = page === "dashboard";
+
+  $("dashboardPage").classList.toggle(
+    "hidden", !dashboard
+  );
+
+  $("profilePage").classList.toggle(
+    "hidden", dashboard
+  );
+
+  $("dashboardTab").setAttribute(
+    "aria-selected", String(dashboard)
+  );
+
+  $("profileTab").setAttribute(
+    "aria-selected", String(!dashboard)
+  );
+}
+
+$("dashboardTab").addEventListener(
+  "click",
+  () => showPage("dashboard")
+);
+
+$("profileTab").addEventListener(
+  "click",
+  () => showPage("profile")
+);
+
+// ====================================
+// 6. SELECT PROFILE PHOTO
+// ====================================
+
+$("babyPhoto").addEventListener(
+  "change",
+  event => {
+    const file = event.target.files?.[0];
+    pendingPhoto = null;
+
+    if (!file) return;
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
+
+    if (
+      !allowedTypes.includes(file.type) ||
+      file.size > 2 * 1024 * 1024
+    ) {
+      $("profileStatus").textContent =
+        "กรุณาเลือกรูป JPG, PNG หรือ WebP " +
+        "ขนาดไม่เกิน 2 MB";
+
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      pendingPhoto = String(reader.result);
+
+      $("photoPreview").src = pendingPhoto;
+
+      $("profileStatus").textContent =
+        "เลือกรูปแล้ว กดบันทึกโปรไฟล์เพื่อยืนยัน";
+    };
+
+    reader.onerror = () => {
+      $("profileStatus").textContent =
+        "อ่านไฟล์รูปไม่สำเร็จ";
+    };
+
+    reader.readAsDataURL(file);
+  }
+);
+
+// ====================================
+// 7. SAVE PROFILE
+// ====================================
+
+$("saveProfile").addEventListener(
+  "click",
+  () => {
+    const next = {
+      familyName: $("familyName").value.trim(),
+      babyName: $("babyName").value.trim(),
+      photo: pendingPhoto ?? profile.photo
+    };
+
+    if (!next.familyName || !next.babyName) {
+      $("profileStatus").textContent =
+        "กรุณากรอกชื่อครอบครัวและชื่อลูก";
+      return;
+    }
+
+    try {
+      localStorage.setItem(
+        PROFILE_KEY,
+        JSON.stringify(next)
+      );
+
+      profile = next;
+      pendingPhoto = null;
+
+      renderProfile();
+
+      $("profileStatus").textContent =
+        "บันทึกโปรไฟล์ในเครื่องนี้สำเร็จ";
+    } catch {
+      $("profileStatus").textContent =
+        "พื้นที่จัดเก็บไม่เพียงพอ " +
+        "ลองใช้รูปขนาดเล็กลง";
+    }
+  }
+);
+
+// ====================================
+// 8. INITIAL DISPLAY
+// ====================================
+
+renderProfile();
 render();
 </script>
+
+<!-- FIREBASE SDK -->
 <script type="module">
-  import { initializeApp }
-    from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
-  import { getFirestore }
-    from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 
-  import { getAuth, signInAnonymously }
-    from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getFirestore }
+  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  // นำ firebaseConfig ของคุณมาวางตรงนี้
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyAWDPshdNEchLcr85fZb1VLSqs-8JVmmL8",
-    authDomain: "baby01-c2c05.firebaseapp.com",
-    projectId: "baby01-c2c05",
-    storageBucket: "baby01-c2c05.firebasestorage.app",
-    messagingSenderId: "279377701098",
-    appId: "1:279377701098:web:bec3d8ac0ba3071ece0f93",
-    measurementId: "G-D1S4FP73DV"
-  };
+import { getAuth, signInAnonymously }
+  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth(app);
-    signInAnonymously(auth)
-    .then(result => {
-      console.log("Login success:", result.user.uid);
-    })
-    .catch(error => {
-      console.error("Login failed:", error.code);
-    });
+const firebaseConfig = {
+  apiKey: "AIzaSyAWDPshdNEchLcr85fZb1VLSqs-8JVmmL8",
+  authDomain: "baby01-c2c05.firebaseapp.com",
+  projectId: "baby01-c2c05",
+  storageBucket: "baby01-c2c05.firebasestorage.app",
+  messagingSenderId: "279377701098",
+  appId: "1:279377701098:web:bec3d8ac0ba3071ece0f93",
+  measurementId: "G-D1S4FP73DV"
+};
 
-  console.log("Firebase initialized:", app.name);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+signInAnonymously(auth)
+  .then(result => {
+    console.log(
+      "Login success:",
+      result.user.uid
+    );
+  })
+  .catch(error => {
+    console.error(
+      "Login failed:",
+      error.code
+    );
+  });
+
+console.log("Firebase initialized:", app.name);
+
 </script>
 </body>
 </html>
