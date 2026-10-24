@@ -4,12 +4,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Baby Care Dashboard</title>
+<title>Baby Care</title>
 
 <style>
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -24,34 +22,12 @@ body {
   padding: 20px;
 }
 
-header {
-  margin: 12px 0 20px;
-}
+header { margin: 12px 0 22px; }
+header small { color: #64748b; }
 
-header small,
-.muted {
-  color: #64748b;
-}
-
-h1 {
-  font-size: 27px;
-  margin: 6px 0;
-}
-
-h2 {
-  margin: 8px 0;
-  font-size: 27px;
-}
-
-h3 {
-  margin: 0 0 14px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+h1 { font-size: 28px; margin: 6px 0; }
+h2 { font-size: 25px; margin: 8px 0; }
+h3 { margin: 0 0 14px; }
 
 .card {
   background: white;
@@ -61,38 +37,42 @@ h3 {
   box-shadow: 0 3px 15px #172a4410;
 }
 
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .card small,
-.card p {
+.note {
   color: #64748b;
 }
 
-.card p {
-  font-size: 13px;
+.note {
+  font-size: 12px;
+  line-height: 1.6;
 }
 
-.field {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin-top: 12px;
-}
-
-input,
-select {
+input, select {
   width: 100%;
-  padding: 13px;
-  margin: 8px 0 12px;
+  padding: 14px;
+  margin: 9px 0 16px;
   font-size: 16px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   background: white;
 }
 
+label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 button {
   width: 100%;
-  padding: 14px;
+  padding: 15px;
   background: #2563eb;
-  border: 0;
+  border: none;
   border-radius: 12px;
   color: white;
   font-size: 16px;
@@ -100,86 +80,64 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
 button.secondary {
   background: #e8eefc;
   color: #2454a3;
 }
+
+.hidden { display: none !important; }
 
 .log {
   padding: 12px 0;
   border-bottom: 1px solid #e5e7eb;
 }
 
-.note {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.profile {
+.family-header {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
 .avatar {
-  height: 76px;
-  width: 76px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  object-fit: cover;
   background: #e8eefc;
-  border: 2px solid #d7e2fa;
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  flex-shrink: 0;
 }
 
-.profile-info {
+.family-info {
   flex: 1;
   min-width: 0;
 }
 
-.profile-info h2 {
-  font-size: 21px;
-  margin: 4px 0;
+.family-info h2 {
   overflow-wrap: anywhere;
 }
 
-.profile-info p {
-  margin: 4px 0;
-}
-
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin: 0 0 14px;
-}
-
-.tabs button {
-  font-size: 14px;
-  padding: 11px;
-}
-
-.tabs button[aria-selected="false"] {
-  background: #e6ebf3;
-  color: #334155;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.photo-preview {
-  width: 104px;
-  height: 104px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #e8eefc;
-  display: block;
-  margin: 8px auto 12px;
-}
-
 .status {
-  font-size: 12px;
+  font-size: 13px;
   color: #64748b;
-  margin-top: 8px;
+  margin-top: 12px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.actions button {
+  font-size: 14px;
+  padding: 12px 6px;
 }
 </style>
 </head>
@@ -187,284 +145,502 @@ button.secondary {
 <body>
 <main class="app">
 
-  <header>
-    <small>👶 BABY CARE</small>
-    <h1>Milk Dashboard</h1>
-    <p class="note">
-      บันทึกการกินนมลูก · เวอร์ชันทดลอง
-    </p>
-  </header>
+<header>
+  <small>👶 BABY CARE</small>
+  <h1>Baby Care</h1>
+  <p class="note">
+    บันทึกและดูแลลูกน้อยภายในครอบครัว
+  </p>
+</header>
 
-  <!-- FAMILY PROFILE HEADER -->
-  <section class="card profile">
-    <img
-      id="profileAvatar"
-      class="avatar"
-      alt="รูปโปรไฟล์ลูก"
-    >
+<!-- LOADING -->
+<section id="loadingPage" class="card">
+  <h3>กำลังเชื่อมต่อ...</h3>
+  <p class="note" id="loadingText">
+    กำลังตรวจสอบ Firebase
+  </p>
+</section>
 
-    <div class="profile-info">
-      <small>โปรไฟล์ครอบครัว</small>
-      <h2 id="displayFamily">
-        ครอบครัวของเรา
-      </h2>
-      <p id="displayBaby">
-        ยังไม่ได้ตั้งชื่อลูก
-      </p>
-    </div>
-  </section>
+<!-- CREATE FAMILY -->
+<section id="setupPage" class="hidden">
 
-  <!-- NAVIGATION -->
-  <nav class="tabs" aria-label="หน้าจอ">
-    <button
-      id="dashboardTab"
-      aria-selected="true"
-      type="button">
-      🍼 Dashboard
-    </button>
-
-    <button
-      id="profileTab"
-      aria-selected="false"
-      type="button">
-      ⚙️ โปรไฟล์
-    </button>
-  </nav>
-
-  <!-- DASHBOARD PAGE -->
-  <div id="dashboardPage">
-
-    <section class="grid">
-      <div class="card">
-        <small>กินนมล่าสุด</small>
-        <h2 id="lastTime">--:--</h2>
-        <p id="lastOz">ยังไม่มีข้อมูล</p>
-      </div>
-
-      <div class="card">
-        <small>ตรวจความหิวถัดไป</small>
-        <h2 id="nextTime">--:--</h2>
-        <p id="nextLabel">
-          ตั้งไว้ 3 ชั่วโมง
-        </p>
-      </div>
-    </section>
-
-    <section class="card">
-      <h3>🍼 บันทึกนม</h3>
-
-      <label class="field" for="milkOz">
-        ปริมาณนม (oz)
-      </label>
-      <input
-        id="milkOz"
-        type="number"
-        min="0.5"
-        max="12"
-        step="0.5"
-        value="3"
-      >
-
-      <label class="field" for="milkType">
-        ประเภทนม
-      </label>
-      <select id="milkType">
-        <option value="นมผสม">
-          นมผสม
-        </option>
-        <option value="นมแม่ปั๊ม">
-          นมแม่ปั๊ม
-        </option>
-      </select>
-
-      <label class="field" for="interval">
-        ช่วงเวลาตรวจความหิว
-      </label>
-      <select id="interval">
-        <option value="2">2 ชั่วโมง</option>
-        <option value="2.5">2.5 ชั่วโมง</option>
-        <option value="3" selected>3 ชั่วโมง</option>
-        <option value="3.5">3.5 ชั่วโมง</option>
-        <option value="4">4 ชั่วโมง</option>
-      </select>
-
-      <button id="saveBtn" type="button">
-        + บันทึกกินนมตอนนี้
-      </button>
-    </section>
-
-    <section class="card">
-      <h3>📋 ประวัติการกินนม</h3>
-      <div id="history">
-        ยังไม่มีข้อมูล
-      </div>
-      <p id="total"></p>
-    </section>
+  <div class="card">
+    <h3>🏠 สร้างครอบครัว</h3>
 
     <p class="note">
-      เวลาเตือนเป็นเพียงการเตือนให้ตรวจความหิว
-      หากลูกหิวก่อนเวลา สามารถให้นมตามความต้องการ
-      และคำแนะนำแพทย์ได้
+      ตั้งชื่ออะไรก็ได้ เช่น ชื่อลูก
+      หรือชื่อครอบครัว
     </p>
 
-  </div>
-
-  <!-- PROFILE PAGE -->
-  <section id="profilePage" class="card hidden">
-
-    <h3>👶 ตั้งค่าโปรไฟล์</h3>
-
-    <label class="field" for="familyName">
-      ชื่อครอบครัว / ชื่อกลุ่ม
+    <label for="familyName">
+      ชื่อกลุ่ม
     </label>
+
     <input
       id="familyName"
       maxlength="60"
-      placeholder="เช่น บ้านน้องเอ"
+      placeholder="เช่น น้องลิน"
     >
 
-    <label class="field" for="babyName">
-      ชื่อลูก
-    </label>
-    <input
-      id="babyName"
-      maxlength="60"
-      placeholder="เช่น น้องเอ"
-    >
-
-    <label class="field" for="babyPhoto">
-      รูปโปรไฟล์ลูก
-    </label>
-    <input
-      id="babyPhoto"
-      type="file"
-      accept="image/jpeg,image/png,image/webp"
-    >
-
-    <p class="note">
-      รองรับ JPG, PNG, WebP ไม่เกิน 2 MB
-      และขึ้นอยู่กับพื้นที่จัดเก็บของเบราว์เซอร์
-    </p>
-
-    <img
-      id="photoPreview"
-      class="photo-preview"
-      alt="ตัวอย่างรูปโปรไฟล์"
-    >
-
-    <button id="saveProfile" type="button">
-      บันทึกโปรไฟล์
+    <button id="createBtn" type="button">
+      + สร้างครอบครัว
     </button>
 
-    <p
-      id="profileStatus"
-      class="status"
-      role="status">
-    </p>
+    <p id="setupStatus" class="status"></p>
+  </div>
+
+  <div class="card">
+    <h3>🔗 เข้าร่วมครอบครัว</h3>
 
     <p class="note">
-      ชื่อและรูปเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น
-      ยังไม่แชร์ไปมือถืออื่น
+      หากมีลิงก์จากสมาชิกครอบครัว
+      ให้เปิดลิงก์นั้นโดยตรง
     </p>
+
+    <label for="joinLink">
+      ลิงก์ครอบครัว
+    </label>
+
+    <input
+      id="joinLink"
+      placeholder="วางลิงก์ที่ได้รับ"
+    >
+
+    <button
+      id="joinBtn"
+      class="secondary"
+      type="button">
+      เข้าร่วม
+    </button>
+  </div>
+
+</section>
+
+<!-- FAMILY PAGE -->
+<section id="familyPage" class="hidden">
+
+  <div class="card family-header">
+    <div class="avatar">👶</div>
+
+    <div class="family-info">
+      <small>ครอบครัวของเรา</small>
+      <h2 id="displayFamily">--</h2>
+      <p class="note">Baby Care Family</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔗 แชร์ให้สมาชิก</h3>
+
+    <p class="note">
+      ส่งลิงก์นี้ให้คนในครอบครัว
+      เพื่อเปิดกลุ่มเดียวกัน
+    </p>
+
+    <button id="shareBtn" type="button">
+      คัดลอกลิงก์ครอบครัว
+    </button>
+
+    <div style="height:10px"></div>
+
+    <button
+      id="leaveBtn"
+      class="secondary"
+      type="button">
+      กลับไปหน้าสร้างกลุ่ม
+    </button>
+  </div>
+
+  <!-- ORIGINAL MILK DASHBOARD -->
+  <section class="grid">
+
+    <div class="card">
+      <small>กินนมล่าสุด</small>
+      <h2 id="lastTime">--:--</h2>
+      <p id="lastOz" class="note">
+        ยังไม่มีข้อมูล
+      </p>
+    </div>
+
+    <div class="card">
+      <small>ตรวจความหิวถัดไป</small>
+      <h2 id="nextTime">--:--</h2>
+      <p id="nextLabel" class="note">
+        ตั้งไว้ 3 ชั่วโมง
+      </p>
+    </div>
 
   </section>
 
+  <section class="card">
+    <h3>🍼 บันทึกนม</h3>
+
+    <label for="milkOz">
+      ปริมาณนม (oz)
+    </label>
+
+    <input
+      id="milkOz"
+      type="number"
+      min="0.5"
+      max="12"
+      step="0.5"
+      value="3"
+    >
+
+    <label for="milkType">
+      ประเภทนม
+    </label>
+
+    <select id="milkType">
+      <option value="นมผสม">นมผสม</option>
+      <option value="นมแม่ปั๊ม">นมแม่ปั๊ม</option>
+    </select>
+
+    <label for="interval">
+      ช่วงเวลาตรวจความหิว
+    </label>
+
+    <select id="interval">
+      <option value="2">2 ชั่วโมง</option>
+      <option value="2.5">2.5 ชั่วโมง</option>
+      <option value="3" selected>
+        3 ชั่วโมง
+      </option>
+      <option value="3.5">3.5 ชั่วโมง</option>
+      <option value="4">4 ชั่วโมง</option>
+    </select>
+
+    <button id="saveBtn" type="button">
+      + บันทึกกินนมตอนนี้
+    </button>
+  </section>
+
+  <section class="card">
+    <h3>📋 ประวัติการกินนม</h3>
+    <div id="history">ยังไม่มีข้อมูล</div>
+    <p id="total" class="note"></p>
+  </section>
+
   <p class="note">
-    Dashboard ใช้ localStorage
-    ส่วน Firebase ใช้ Anonymous Authentication
-    ยังไม่ซิงก์ข้อมูลครอบครัว
+    ข้อมูลนมในเวอร์ชันนี้ยังเก็บเฉพาะ
+    เบราว์เซอร์เครื่องนั้น ไม่ซิงก์ระหว่างมือถือ
+    เวลาตรวจความหิวเป็นเพียงการเตือน
+    ไม่ใช่กำหนดเวลาให้นมตายตัว
   </p>
+
+</section>
 
 </main>
 
-<script>
+<script type="module">
+
 // ====================================
-// 1. LOCAL STORAGE
+// 1. FIREBASE IMPORT
 // ====================================
 
-const KEY = "baby-care-milk-v1";
-const PROFILE_KEY = "baby-care-profile-v1";
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+}
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+import {
+  getAuth,
+  signInAnonymously
+}
+from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+// ====================================
+// 2. FIREBASE CONFIG
+// ====================================
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAWDPshdNEchLcr85fZb1VLSqs-8JVmmL8",
+  authDomain: "baby01-c2c05.firebaseapp.com",
+  projectId: "baby01-c2c05",
+  storageBucket: "baby01-c2c05.firebasestorage.app",
+  messagingSenderId: "279377701098",
+  appId: "1:279377701098:web:bec3d8ac0ba3071ece0f93",
+  measurementId: "G-D1S4FP73DV"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ====================================
+// 3. GENERAL
+// ====================================
 
 const $ = id => document.getElementById(id);
 
-const fallbackAvatar =
-  "data:image/svg+xml;charset=utf-8," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" ' +
-    'viewBox="0 0 100 100">' +
-    '<rect width="100" height="100" fill="#e8eefc"/>' +
-    '<text x="50" y="66" text-anchor="middle" ' +
-    'font-size="52">👶</text></svg>'
-  );
+const FAMILY_KEY = "baby-care-family-v1";
+const OLD_MILK_KEY = "baby-care-milk-v1";
 
+let currentFamilyId = "";
+let currentFamilyName = "";
 let logs = [];
 
-let profile = {
-  familyName: "",
-  babyName: "",
-  photo: ""
-};
-
-let pendingPhoto = null;
-
-try {
-  const saved = JSON.parse(
-    localStorage.getItem(KEY)
-  );
-
-  logs = Array.isArray(saved) ? saved : [];
-} catch {
-  logs = [];
+function showPage(page) {
+  ["loadingPage", "setupPage", "familyPage"]
+    .forEach(id => {
+      $(id).classList.toggle(
+        "hidden",
+        id !== page
+      );
+    });
 }
 
-try {
-  const saved = JSON.parse(
-    localStorage.getItem(PROFILE_KEY)
+function setStatus(message) {
+  $("setupStatus").textContent = message;
+}
+
+function familyUrl(id) {
+  return location.origin
+    + location.pathname
+    + "#family="
+    + encodeURIComponent(id);
+}
+
+function familyIdFromHash() {
+  const params = new URLSearchParams(
+    location.hash.slice(1)
   );
 
-  if (saved && typeof saved === "object") {
-    profile = {
-      familyName: String(saved.familyName || ""),
-      babyName: String(saved.babyName || ""),
-      photo: String(saved.photo || "")
-    };
+  return params.get("family") || "";
+}
+
+function validFamilyId(id) {
+  return /^[a-f0-9]{64}$/.test(id);
+}
+
+// ====================================
+// 4. CREATE RANDOM FAMILY ID
+// ====================================
+
+function createFamilyId() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+
+  return Array.from(bytes, byte =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+}
+
+// ====================================
+// 5. CREATE FAMILY
+// ====================================
+
+async function createFamily() {
+  const name = $("familyName").value.trim();
+
+  if (!name || name.length > 60) {
+    setStatus("กรุณากรอกชื่อกลุ่ม");
+    return;
   }
-} catch {
-  // ใช้ค่าเริ่มต้น
+
+  $("createBtn").disabled = true;
+  setStatus("กำลังสร้างครอบครัว...");
+
+  try {
+    const id = createFamilyId();
+
+    await setDoc(
+      doc(db, "families", id),
+      {
+        name,
+        createdAt: serverTimestamp()
+      }
+    );
+
+    localStorage.setItem(FAMILY_KEY, id);
+
+    location.hash = "family=" + id;
+
+    await openFamily(id);
+
+  } catch (error) {
+    console.error(error);
+    setStatus(
+      "สร้างครอบครัวไม่สำเร็จ: " +
+      error.code
+    );
+  } finally {
+    $("createBtn").disabled = false;
+  }
 }
 
 // ====================================
-// 2. PROFILE DISPLAY
+// 6. OPEN FAMILY
 // ====================================
 
-function renderProfile() {
-  $("displayFamily").textContent =
-    profile.familyName || "ครอบครัวของเรา";
+async function openFamily(id) {
+  showPage("loadingPage");
 
-  $("displayBaby").textContent =
-    profile.babyName || "ยังไม่ได้ตั้งชื่อลูก";
+  if (!validFamilyId(id)) {
+    showPage("setupPage");
+    setStatus("ลิงก์ครอบครัวไม่ถูกต้อง");
+    return;
+  }
 
-  $("profileAvatar").src =
-    profile.photo || fallbackAvatar;
+  try {
+    const snapshot = await getDoc(
+      doc(db, "families", id)
+    );
 
-  $("photoPreview").src =
-    profile.photo || fallbackAvatar;
+    if (!snapshot.exists()) {
+      showPage("setupPage");
+      setStatus("ไม่พบครอบครัวนี้");
+      return;
+    }
 
-  $("familyName").value = profile.familyName;
-  $("babyName").value = profile.babyName;
+    currentFamilyId = id;
+    currentFamilyName = snapshot.data().name;
+
+    $("displayFamily").textContent =
+      currentFamilyName;
+
+    localStorage.setItem(FAMILY_KEY, id);
+
+    loadMilkLogs();
+    renderMilk();
+
+    showPage("familyPage");
+
+  } catch (error) {
+    console.error(error);
+
+    showPage("setupPage");
+    setStatus(
+      "เปิดครอบครัวไม่สำเร็จ: " +
+      error.code
+    );
+  }
 }
 
 // ====================================
-// 3. MILK DASHBOARD
+// 7. SHARE / JOIN / LEAVE
 // ====================================
+
+$("createBtn").addEventListener(
+  "click",
+  createFamily
+);
+
+$("shareBtn").addEventListener(
+  "click",
+  async () => {
+    const url = familyUrl(currentFamilyId);
+
+    try {
+      await navigator.clipboard.writeText(url);
+      alert("คัดลอกลิงก์แล้ว");
+    } catch {
+      prompt("คัดลอกลิงก์นี้", url);
+    }
+  }
+);
+
+$("joinBtn").addEventListener(
+  "click",
+  async () => {
+    const value = $("joinLink").value.trim();
+
+    let id = "";
+
+    try {
+      const url = new URL(value);
+      const params = new URLSearchParams(
+        url.hash.slice(1)
+      );
+
+      id = params.get("family") || "";
+
+      if (
+        url.origin !== location.origin ||
+        url.pathname !== location.pathname
+      ) {
+        setStatus("กรุณาใช้ลิงก์ Baby Care นี้");
+        return;
+      }
+    } catch {
+      setStatus("กรุณาวางลิงก์ให้ถูกต้อง");
+      return;
+    }
+
+    if (!validFamilyId(id)) {
+      setStatus("รหัสครอบครัวไม่ถูกต้อง");
+      return;
+    }
+
+    location.hash = "family=" + id;
+    await openFamily(id);
+  }
+);
+
+$("leaveBtn").addEventListener(
+  "click",
+  () => {
+    const confirmed = confirm(
+      "กลับไปหน้าสร้างครอบครัว?\n" +
+      "ครอบครัวเดิมยังอยู่ใน Firebase " +
+      "กรุณาเก็บลิงก์ไว้ก่อนออก"
+    );
+
+    if (!confirmed) return;
+
+    localStorage.removeItem(FAMILY_KEY);
+
+    currentFamilyId = "";
+    currentFamilyName = "";
+
+    history.replaceState(
+      null,
+      "",
+      location.pathname + location.search
+    );
+
+    setStatus("");
+    showPage("setupPage");
+  }
+);
+
+// ====================================
+// 8. MILK LOCAL STORAGE
+// ====================================
+
+// ข้อมูลเดิมยังใช้ Key เดิม
+// และยังไม่ส่งข้อมูลนมขึ้น Firestore
+
+function loadMilkLogs() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(OLD_MILK_KEY)
+    );
+
+    logs = Array.isArray(saved) ? saved : [];
+  } catch {
+    logs = [];
+  }
+}
 
 const formatTime = time =>
-  new Date(time).toLocaleTimeString("th-TH", {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  new Date(time).toLocaleTimeString(
+    "th-TH",
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 
-function render() {
+function renderMilk() {
   logs.sort((a, b) => b.time - a.time);
 
   const last = logs[0];
@@ -480,7 +656,9 @@ function render() {
 
   $("nextTime").textContent =
     last
-      ? formatTime(last.time + hours * 3600000)
+      ? formatTime(
+          last.time + hours * 3600000
+        )
       : "--:--";
 
   $("nextLabel").textContent =
@@ -520,222 +698,90 @@ function render() {
     `รวม ${total.toFixed(1)} oz`;
 }
 
-// ====================================
-// 4. SAVE MILK
-// ====================================
-
-$("saveBtn").addEventListener("click", () => {
-  const oz = Number($("milkOz").value);
-  const type = $("milkType").value;
-
-  if (
-    !Number.isFinite(oz) ||
-    oz < 0.5 ||
-    oz > 12
-  ) {
-    alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
-    return;
-  }
-
-  const updated = [
-    {
-      time: Date.now(),
-      oz,
-      type
-    },
-    ...logs
-  ];
-
-  try {
-    localStorage.setItem(
-      KEY,
-      JSON.stringify(updated)
-    );
-
-    logs = updated;
-    render();
-
-    alert("บันทึกเรียบร้อย");
-  } catch {
-    alert("บันทึกข้อมูลไม่ได้ กรุณาตรวจสอบพื้นที่จัดเก็บ");
-  }
-});
-
-$("interval").addEventListener("change", render);
-
-// ====================================
-// 5. PAGE NAVIGATION
-// ====================================
-
-function showPage(page) {
-  const dashboard = page === "dashboard";
-
-  $("dashboardPage").classList.toggle(
-    "hidden", !dashboard
-  );
-
-  $("profilePage").classList.toggle(
-    "hidden", dashboard
-  );
-
-  $("dashboardTab").setAttribute(
-    "aria-selected", String(dashboard)
-  );
-
-  $("profileTab").setAttribute(
-    "aria-selected", String(!dashboard)
-  );
-}
-
-$("dashboardTab").addEventListener(
-  "click",
-  () => showPage("dashboard")
-);
-
-$("profileTab").addEventListener(
-  "click",
-  () => showPage("profile")
-);
-
-// ====================================
-// 6. SELECT PROFILE PHOTO
-// ====================================
-
-$("babyPhoto").addEventListener(
-  "change",
-  event => {
-    const file = event.target.files?.[0];
-    pendingPhoto = null;
-
-    if (!file) return;
-
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp"
-    ];
-
-    if (
-      !allowedTypes.includes(file.type) ||
-      file.size > 2 * 1024 * 1024
-    ) {
-      $("profileStatus").textContent =
-        "กรุณาเลือกรูป JPG, PNG หรือ WebP " +
-        "ขนาดไม่เกิน 2 MB";
-
-      event.target.value = "";
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      pendingPhoto = String(reader.result);
-
-      $("photoPreview").src = pendingPhoto;
-
-      $("profileStatus").textContent =
-        "เลือกรูปแล้ว กดบันทึกโปรไฟล์เพื่อยืนยัน";
-    };
-
-    reader.onerror = () => {
-      $("profileStatus").textContent =
-        "อ่านไฟล์รูปไม่สำเร็จ";
-    };
-
-    reader.readAsDataURL(file);
-  }
-);
-
-// ====================================
-// 7. SAVE PROFILE
-// ====================================
-
-$("saveProfile").addEventListener(
+$("saveBtn").addEventListener(
   "click",
   () => {
-    const next = {
-      familyName: $("familyName").value.trim(),
-      babyName: $("babyName").value.trim(),
-      photo: pendingPhoto ?? profile.photo
-    };
+    const oz = Number($("milkOz").value);
+    const type = $("milkType").value;
 
-    if (!next.familyName || !next.babyName) {
-      $("profileStatus").textContent =
-        "กรุณากรอกชื่อครอบครัวและชื่อลูก";
+    if (
+      !Number.isFinite(oz) ||
+      oz < 0.5 ||
+      oz > 12
+    ) {
+      alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
       return;
     }
+
+    const updated = [
+      {
+        time: Date.now(),
+        oz,
+        type
+      },
+      ...logs
+    ];
 
     try {
       localStorage.setItem(
-        PROFILE_KEY,
-        JSON.stringify(next)
+        OLD_MILK_KEY,
+        JSON.stringify(updated)
       );
 
-      profile = next;
-      pendingPhoto = null;
+      logs = updated;
+      renderMilk();
 
-      renderProfile();
+      alert("บันทึกเรียบร้อย");
 
-      $("profileStatus").textContent =
-        "บันทึกโปรไฟล์ในเครื่องนี้สำเร็จ";
     } catch {
-      $("profileStatus").textContent =
-        "พื้นที่จัดเก็บไม่เพียงพอ " +
-        "ลองใช้รูปขนาดเล็กลง";
+      alert("บันทึกข้อมูลไม่สำเร็จ");
     }
   }
 );
 
+$("interval").addEventListener(
+  "change",
+  renderMilk
+);
+
 // ====================================
-// 8. INITIAL DISPLAY
+// 9. START APP
 // ====================================
 
-renderProfile();
-render();
-</script>
+async function startApp() {
+  showPage("loadingPage");
 
-<!-- FIREBASE SDK -->
-<script type="module">
+  try {
+    const result = await signInAnonymously(auth);
 
-import { initializeApp }
-  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-
-import { getFirestore }
-  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
-
-import { getAuth, signInAnonymously }
-  from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAWDPshdNEchLcr85fZb1VLSqs-8JVmmL8",
-  authDomain: "baby01-c2c05.firebaseapp.com",
-  projectId: "baby01-c2c05",
-  storageBucket: "baby01-c2c05.firebasestorage.app",
-  messagingSenderId: "279377701098",
-  appId: "1:279377701098:web:bec3d8ac0ba3071ece0f93",
-  measurementId: "G-D1S4FP73DV"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-signInAnonymously(auth)
-  .then(result => {
     console.log(
-      "Login success:",
+      "Firebase UID:",
       result.user.uid
     );
-  })
-  .catch(error => {
-    console.error(
-      "Login failed:",
-      error.code
-    );
-  });
 
-console.log("Firebase initialized:", app.name);
+    const hashId = familyIdFromHash();
+
+    const savedId =
+      localStorage.getItem(FAMILY_KEY);
+
+    const id = hashId || savedId;
+
+    if (id) {
+      await openFamily(id);
+    } else {
+      showPage("setupPage");
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    $("loadingText").textContent =
+      "Firebase Login ไม่สำเร็จ: " +
+      error.code;
+  }
+}
+
+startApp();
 
 </script>
 </body>
