@@ -210,7 +210,7 @@ render();
   import { getFirestore }
     from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  import { getAuth }
+  import { getAuth, signInAnonymously }
     from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 
   // นำ firebaseConfig ของคุณมาวางตรงนี้
@@ -228,6 +228,13 @@ render();
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const auth = getAuth(app);
+    signInAnonymously(auth)
+    .then(result => {
+      console.log("Login success:", result.user.uid);
+    })
+    .catch(error => {
+      console.error("Login failed:", error.code);
+    });
 
   console.log("Firebase initialized:", app.name);
 </script>
