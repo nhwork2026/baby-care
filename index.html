@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baby Care Dashboard</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #f4f7fb;
+  color: #243047;
+  font-family: system-ui, sans-serif;
+}
+.app { max-width: 480px; margin: auto; padding: 20px; }
+header { margin: 12px 0 24px; }
+header small { color: #64748b; }
+h1 { margin: 6px 0; font-size: 28px; }
+h2 { margin: 8px 0; font-size: 27px; }
+h3 { margin-top: 0; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.card {
+  background: white;
+  padding: 18px;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 3px 15px #172a4410;
+}
+.card small { color: #64748b; }
+.card p { color: #64748b; font-size: 13px; }
+input, select {
+  width: 100%;
+  padding: 14px;
+  margin: 10px 0 16px;
+  font-size: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+}
+button {
+  width: 100%;
+  padding: 16px;
+  background: #2563eb;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+.log {
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.note { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <small>👶 BABY CARE</small>
+    <h1>Milk Dashboard</h1>
+    <p class="note">บันทึกการกินนมลูก</p>
+  </header>
+
+  <section class="grid">
+    <div class="card">
+      <small>กินนมล่าสุด</small>
+      <h2 id="lastTime">--:--</h2>
+      <p id="lastOz">ยังไม่มีข้อมูล</p>
+    </div>
+    <div class="card">
+      <small>ตรวจความหิวถัดไป</small>
+      <h2 id="nextTime">--:--</h2>
+      <p id="nextLabel">ตั้งไว้ 3 ชั่วโมง</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>🍼 บันทึกนม</h3>
+    <label for="milkOz">ปริมาณนม (oz)</label>
+    <input id="milkOz" type="number"
+           min="0.5" max="12" step="0.5" value="3">
+
+    <label for="milkType">ประเภทนม</label>
+    <select id="milkType">
+      <option value="นมผสม">นมผสม</option>
+      <option value="นมแม่ปั๊ม">นมแม่ปั๊ม</option>
+    </select>
+
+    <label for="interval">ช่วงเวลาเตือน</label>
+    <select id="interval">
+      <option value="2">2 ชั่วโมง</option>
+      <option value="2.5">2.5 ชั่วโมง</option>
+      <option value="3" selected>3 ชั่วโมง</option>
+      <option value="3.5">3.5 ชั่วโมง</option>
+      <option value="4">4 ชั่วโมง</option>
+    </select>
+
+    <button id="saveBtn">+ บันทึกกินนมตอนนี้</button>
+  </section>
+
+  <section class="card">
+    <h3>📋 ประวัติการกินนม</h3>
+    <div id="history">ยังไม่มีข้อมูล</div>
+    <p id="total"></p>
+  </section>
+
+  <p class="note">
+    เวลาที่แสดงเป็นเพียงการเตือนให้ตรวจความหิว
+    หากลูกหิวก่อนเวลา สามารถให้นมได้ตามความต้องการ
+  </p>
+</main>
+
+<script>
+const KEY = "baby-care-milk-v1";
+let logs = [];
+
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY));
+  logs = Array.isArray(saved) ? saved : [];
+} catch {
+  logs = [];
+}
+
+const $ = id => document.getElementById(id);
+
+const formatTime = time =>
+  new Date(time).toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+function render() {
+  logs.sort((a, b) => b.time - a.time);
+  const last = logs[0];
+  const hours = Number($("interval").value);
+
+  $("lastTime").textContent =
+    last ? formatTime(last.time) : "--:--";
+
+  $("lastOz").textContent =
+    last ? `${last.oz} oz · ${last.type}` : "ยังไม่มีข้อมูล";
+
+  $("nextTime").textContent =
+    last ? formatTime(last.time + hours * 3600000) : "--:--";
+
+  $("nextLabel").textContent = `ตั้งไว้ ${hours} ชั่วโมง`;
+
+  const history = $("history");
+  history.replaceChildren();
+
+  if (!logs.length) {
+    history.textContent = "ยังไม่มีข้อมูล";
+  }
+
+  logs.slice(0, 20).forEach(item => {
+    const row = document.createElement("div");
+    row.className = "log";
+    row.textContent =
+      `${formatTime(item.time)} · ${item.oz} oz · ${item.type}`;
+    history.appendChild(row);
+  });
+
+  const today = new Date().toDateString();
+  const todayLogs = logs.filter(item =>
+    new Date(item.time).toDateString() === today
+  );
+
+  const total = todayLogs.reduce(
+    (sum, item) => sum + Number(item.oz), 0
+  );
+
+  $("total").textContent =
+    `วันนี้ ${todayLogs.length} มื้อ · รวม ${total.toFixed(1)} oz`;
+}
+
+$("saveBtn").addEventListener("click", () => {
+  const oz = Number($("milkOz").value);
+  const type = $("milkType").value;
+
+  if (!Number.isFinite(oz) || oz < 0.5 || oz > 12) {
+    alert("กรุณาระบุปริมาณนมให้ถูกต้อง");
+    return;
+  }
+
+  logs.push({
+    time: Date.now(),
+    oz,
+    type
+  });
+
+  try {
+    localStorage.setItem(KEY, JSON.stringify(logs));
+    render();
+    alert("บันทึกเรียบร้อย");
+  } catch {
+    alert("ไม่สามารถบันทึกข้อมูลลงเครื่องได้");
+  }
+});
+
+$("interval").addEventListener("change", render);
+
+render();
+</script>
+</body>
+</html>
