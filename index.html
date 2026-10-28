@@ -119,25 +119,29 @@ function renderMemberPreview(){if(!familyId)return;$("familyMemberCount").textCo
 }
 function inviteParams(){const h=new URLSearchParams(location.hash.slice(1));const fid=h.get("family"),token=h.get("invite");return validFamily(fid)&&/^[a-f0-9]{48}$/.test(token||"")?{fid,token}:null}
 $("cancelInvite").onclick=()=>{history.replaceState(null,"",location.pathname+location.search);show("login")};
-$("acceptInvite").onclick=async()=>{const u=auth.currentUser,p=inviteParams(),name=$("memberNickname").value.trim();if(!u?.isAnonymous||!p)return alert("กรุณาเปิดลิงก์เชิญอีกครั้ง");if(!name||name.length>40)return alert("กรอกชื่อเล่น 1–40 ตัวอักษร");const btn=$("acceptInvite");btn.disabled=true;
- try{const inv=doc(db,"families",p.fid,"invites",p.token),mem=doc(db,"families",p.fid,"members",u.uid);
- // A valid existing membership is sufficient; do not consume another invite.
- const existing=await getDoc(mem);
- if(!existing.exists()){
-  await runTransaction(db,async tx=>{
-   const i=await tx.get(inv),m=await tx.get(mem);
-   if(m.exists())return; // Another device/tab completed the join first.
-   if(!i.exists()||i.data().status!=="pending")throw Error("ลิงก์ถูกใช้แล้วหรือไม่ถูกต้อง");
-   const t=i.data().createdAt?.toMillis?.()||0;
-   if(Date.now()-t>86400000)throw Error("ลิงก์หมดอายุ กรุณาขอลิงก์ใหม่");
-   tx.set(mem,{name,joinedAt:serverTimestamp(),inviteToken:p.token,role:"member"});
-   tx.update(inv,{status:"used",usedBy:u.uid,usedAt:serverTimestamp()});
-  });
- }
- // openFamily verifies current membership again before showing private data.
- localStorage.setItem(MEMBER_KEY,JSON.stringify({uid:u.uid,fid:p.fid}));
- history.replaceState(null,"",location.pathname+location.search);
- await openFamily(p.fid);
+$("acceptInvite").onclick=async()=>{
+ const u=auth.currentUser,p=inviteParams(),name=$("memberNickname").value.trim();
+ if(!u?.isAnonymous||!p)return alert("กรุณาเปิดลิงก์เชิญอีกครั้ง");
+ const btn=$("acceptInvite");btn.disabled=true;
+ try{
+  const mem=doc(db,"families",p.fid,"members",u.uid);
+  const existing=await getDoc(mem);
+  if(!existing.exists()){
+   if(!name||name.length>40)throw Error("กรอกชื่อเล่น 1–40 ตัวอักษร");
+   const inv=doc(db,"families",p.fid,"invites",p.token);
+   await runTransaction(db,async tx=>{
+    const i=await tx.get(inv),m=await tx.get(mem);
+    if(m.exists())return;
+    if(!i.exists()||i.data().status!=="pending")throw Error("ลิงก์ถูกใช้แล้วหรือไม่ถูกต้อง กรุณาขอลิงก์ใหม่");
+    const t=i.data().createdAt?.toMillis?.()||0;
+    if(!t||Date.now()-t>86400000)throw Error("ลิงก์หมดอายุ กรุณาขอลิงก์ใหม่");
+    tx.set(mem,{name,joinedAt:serverTimestamp(),inviteToken:p.token,role:"member"});
+    tx.update(inv,{status:"used",usedBy:u.uid,usedAt:serverTimestamp()});
+   });
+  }
+  localStorage.setItem(MEMBER_KEY,JSON.stringify({uid:u.uid,fid:p.fid}));
+  history.replaceState(null,"",location.pathname+location.search);
+  await openFamily(p.fid);
  }catch(e){fail(e)}finally{btn.disabled=false}
 };
 function listenFamily(){let g=generation,f=familyId;familyStop=onSnapshot(doc(db,"families",f),s=>{if(g!==generation||f!==familyId)return;if(!s.exists())return status("ไม่พบครอบครัว");let old=JSON.stringify(settings());familyData=s.data();if(role==="owner"){$("resetDataBtn").textContent=familyData.resetStatus==="running"?"▶ ดำเนินการ Reset ต่อ":"🗑️ Reset All Data";}renderProfile();renderDefaults();renderPlan();if(old!==JSON.stringify(settings())&&!edit.milkLogs)resetMilk();renderHome();if(activePage==="guide")renderGuide()},e=>{if(g===generation)fail(e)})}
@@ -306,23 +310,58 @@ function authError(e){const m={"auth/invalid-email":"รูปแบบอีเ
 async function authSubmit(register){let email=$("authEmail").value.trim(),password=$("authPassword").value;if(!email||password.length<6)return alert("กรอกอีเมลและรหัสผ่านอย่างน้อย 6 ตัวอักษร");$("loginBtn").disabled=$("registerBtn").disabled=true;try{if(register)await createUserWithEmailAndPassword(auth,email,password);else await signInWithEmailAndPassword(auth,email,password);$("authPassword").value=""}catch(e){authError(e)}finally{$("loginBtn").disabled=$("registerBtn").disabled=false}}
 $("loginBtn").onclick=()=>authSubmit(false);$("registerBtn").onclick=()=>authSubmit(true);
 $("adminLogoutBtn").onclick=()=>signOut(auth).catch(authError);$("logoutBtn").onclick=async()=>{try{if(auth.currentUser?.isAnonymous)localStorage.removeItem(MEMBER_KEY);await signOut(auth)}catch(e){authError(e)}};
+// V6: Member uses a persistent anonymous Firebase account; Owner uses email/password.
+// Membership is checked independently of invite status, and re-opening an invite never re-joins.
 let authSequence=0;
-onAuthStateChanged(auth,async user=>{const seq=++authSequence;cleanup();familyId="";show("loading");const invite=inviteParams();
+onAuthStateChanged(auth,async user=>{
+ const seq=++authSequence;
+ cleanup();familyId="";show("loading");
+ const invite=inviteParams();
  try{
- if(invite){if(!user){await signInAnonymously(auth);return}if(user.isAnonymous){
-  const member=await getDoc(doc(db,"families",invite.fid,"members",user.uid));
-  if(seq!==authSequence)return;
-  if(member.exists()){
-   localStorage.setItem(MEMBER_KEY,JSON.stringify({uid:user.uid,fid:invite.fid}));
-   history.replaceState(null,"",location.pathname+location.search);
-   await openFamily(invite.fid);
-   return;
+  if(!user){
+   if(invite){await signInAnonymously(auth);return}
+   show("login");return;
   }
-  show("inviteJoin");return;
- }show("login");alert("ลิงก์เชิญสำหรับสมาชิกที่ไม่มี Email กรุณาเปิดบนเบราว์เซอร์อื่นหรือออกจากบัญชีเจ้าของก่อน");return}
- if(!user){show("login");return}
- if(user.isAnonymous){const saved=JSON.parse(localStorage.getItem(MEMBER_KEY)||"null");if(saved?.uid===user.uid&&validFamily(saved.fid)){await openFamily(saved.fid);return}await signOut(auth);return}
- $("accountEmail").textContent=user.email||"";const id=await myFamily();if(seq!==authSequence)return;if(user.uid===ADMIN_UID){show("adminPanel");loadAdmin();return}if(id)await openFamily(id);else show("setup")
+  if(user.isAnonymous){
+   const saved=(()=>{try{return JSON.parse(localStorage.getItem(MEMBER_KEY)||"null")}catch{return null}})();
+   // First restore the existing family, regardless of invite token or its used status.
+   if(saved?.uid===user.uid&&validFamily(saved.fid)){
+    const m=await getDoc(doc(db,"families",saved.fid,"members",user.uid));
+    if(seq!==authSequence)return;
+    if(m.exists()){
+     // A link to the same family is only navigation, not a new join.
+     if(!invite||invite.fid===saved.fid){
+      if(invite)history.replaceState(null,"",location.pathname+location.search);
+      await openFamily(saved.fid);return;
+     }
+     // Keep current family rather than silently joining a different one.
+     await openFamily(saved.fid);
+     alert("บัญชีนี้เป็นสมาชิกของอีกครอบครัวอยู่แล้ว");return;
+    }
+    localStorage.removeItem(MEMBER_KEY);
+   }
+   if(invite){
+    const m=await getDoc(doc(db,"families",invite.fid,"members",user.uid));
+    if(seq!==authSequence)return;
+    if(m.exists()){
+     localStorage.setItem(MEMBER_KEY,JSON.stringify({uid:user.uid,fid:invite.fid}));
+     history.replaceState(null,"",location.pathname+location.search);
+     await openFamily(invite.fid);return;
+    }
+    show("inviteJoin");return;
+   }
+   // Do not sign out: anonymous UID must remain stable for a future invite.
+   show("login");return;
+  }
+  if(invite){
+   history.replaceState(null,"",location.pathname+location.search);
+   alert("ขณะนี้เข้าสู่ระบบ Owner อยู่ กรุณาเปิดลิงก์เชิญในเบราว์เซอร์ของสมาชิก");
+  }
+  $("accountEmail").textContent=user.email||"";
+  const id=await myFamily();
+  if(seq!==authSequence)return;
+  if(user.uid===ADMIN_UID){show("adminPanel");loadAdmin();return}
+  if(id)await openFamily(id);else show("setup");
  }catch(e){if(seq===authSequence){show("login");fail(e)}}
 },e=>{show("login");authError(e)});
 </script></body></html>
